@@ -1,0 +1,34 @@
+# vars.yml
+---
+
+api_token: "{{ lookup('env', 'LINODE_ACCESS_TOKEN') }}"
+
+# default parameters
+default_server:
+  label: 'linode-{{ 100 |random }}'
+  type: g6-nanode-1
+  region: eu-central
+  image: linode/centos7
+  root_pass: verysecurepassword
+  private_ip: false
+  authorized_keys:
+    - '{{ lookup("file", "~/.ssh/id_ecdsa_linode.pub") }}'
+  group: app
+  tags:
+    - env=demo
+  api_token: "{{ api_token }}"
+
+registry:
+  label: registry.showcase.systems
+
+student01:
+  label: student01.showcase.systems
+
+# list of servers you want to create
+create_servers:
+  - '{{ registry }}'
+  - '{{ student01 }}'
+
+# list of servers you want to delete
+delete_servers:
+  - student.showcase.systems

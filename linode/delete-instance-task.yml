@@ -1,0 +1,38 @@
+#!/usr/bin/env ansible-playbook
+# delete-instance-task.yml
+---
+- name: Delete one server instance
+  linode.cloud.instance:
+    label: '{{ server }}'
+    state: absent
+    api_token: '{{ api_token }}'
+  register: instance_result
+
+- name: Print notification on error
+  debug:
+    msg: 'Server "{{ server }}" was not deleted. It probably does not exist.'
+  when: not instance_result.changed
+
+- name: Print instance info
+  debug:
+    msg: |
+      SERVER DELETED:
+      Label: {{ instance_result.instance.label }}
+      IPv4: {{ instance_result.instance.ipv4[0] }}
+  when: instance_result.changed
+
+- name: Delete server entry from the local hosts file
+  become: true
+  lineinfile:
+    path: /etc/hosts
+    regexp: '{{ instance_result.instance.label }}'
+    state: absent
+  when: instance_result.changed
+
+- name: Print the hosts file
+  debug:
+    msg: |
+      /etc/hosts file on node: {{ ansible_hostname }}
+      ........................
+      {{ lookup("file", "/etc/hosts") }}
+  when: instance_result.changed

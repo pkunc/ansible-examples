@@ -1,0 +1,50 @@
+#!/usr/bin/env ansible-playbook
+# create-instance-task.yml
+---
+- name: Combine default and specific server parameters
+  set_fact:
+    server_to_create: '{{ default_server | combine(server) }}'
+
+- name: Create one server instance
+  linode.cloud.instance:
+    label: '{{ server_to_create.label }}'
+    type: '{{ server_to_create.type }}'
+    region: '{{ server_to_create.region }}'
+    image: '{{ server_to_create.image }}'
+    root_pass: '{{ server_to_create.root_pass }}'
+    private_ip: '{{ server_to_create.private_ip }}'
+    authorized_keys: '{{ server_to_create.authorized_keys }}'
+    group: '{{ server_to_create.group }}'
+    tags: '{{ server_to_create.tags }}'
+    state: present
+    api_token: '{{ server_to_create.api_token }}'
+  register: instance_result
+
+- name: Print notification on error
+  debug:
+    msg: 'Server "{{ server_to_create.label }}" was not created. It probably already exists.'
+  when: not instance_result.changed
+
+- name: Print instance info
+  debug:
+    msg: |
+      NEW SERVER CREATED:
+      Label: {{ instance_result.instance.label }}
+      IPv4: {{ instance_result.instance.ipv4[0] }}
+  when: instance_result.changed
+
+- name: Add newly created hostname and IP address into the local hosts file
+  become: true
+  lineinfile:
+    path: /etc/hosts
+    regexp: '{{ instance_result.instance.label }}'
+    line: '{{ instance_result.instance.ipv4[0] }} {{ instance_result.instance.label }}'
+  when: instance_result.changed
+
+- name: Print the hosts file
+  debug:
+    msg: |
+      /etc/hosts file on node: {{ ansible_hostname }}
+      ........................
+      {{ lookup("file", "/etc/hosts") }}
+  when: instance_result.changed

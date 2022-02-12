@@ -1,0 +1,5 @@
+# inventory-linode.yml
+---
+plugin: community.general.linode
+groups:
+  prod: "'prod' in (tags|list)"

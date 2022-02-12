@@ -1,0 +1,20 @@
+#!/usr/bin/env ansible-playbook
+# create-instance.yml
+
+# Example usage: ansible-playbook create-instance.yml --ask-become-pass
+---
+- name: Create Linode server instance
+  hosts: localhost
+  vars_files: vars.yml
+
+  tasks:
+    - name: Check if the token is set
+      fail:
+        msg: 'Linode token not set. Use "export LINODE_ACCESS_TOKEN=..."'
+      when: not lookup('env', 'LINODE_ACCESS_TOKEN')
+
+    - name: Create (multiple) server instances
+      include_tasks: 'create-instance-task.yml'
+      loop: '{{ create_servers }}'
+      loop_control:
+        loop_var: server

@@ -1,0 +1,20 @@
+#!/usr/bin/env ansible-playbook
+# delete-instance.yml
+
+# Example usage: ansible-playbook delete-instance.yml --ask-become-pass
+---
+- name: Delete Linode server instance
+  hosts: localhost
+  vars_files: vars.yml
+
+  tasks:
+    - name: Check if the token is set
+      fail:
+        msg: 'Linode token not set. Use "export LINODE_ACCESS_TOKEN=..."'
+      when: not lookup('env', 'LINODE_ACCESS_TOKEN')
+
+    - name: Delete (multiple) server instances
+      include_tasks: 'delete-instance-task.yml'
+      loop: '{{ delete_servers }}'
+      loop_control:
+        loop_var: server
