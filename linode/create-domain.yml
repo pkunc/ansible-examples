@@ -1,0 +1,41 @@
+#!/usr/bin/env ansible-playbook
+# create-domain.yml
+
+# Example usage: ansible-playbook create-domain.yml
+---
+- name: Create Linode domain
+  hosts: localhost
+  vars_files: vars.yml
+
+  tasks:
+    - name: Check if the token is set
+      fail:
+        msg: 'Linode token not set. Use "export LINODE_ACCESS_TOKEN=..."'
+      when: not lookup('env', 'LINODE_ACCESS_TOKEN')
+
+    - name: Create (multiple) domains
+      linode.cloud.domain:
+        domain: '{{ item.domain }}'
+        type: '{{ item.type | default("primary") }}'
+        soa_email: '{{ item.soa_email }}'
+        state: present
+        api_token: '{{ api_token }}'
+      loop: '{{ create_domains }}'
+      register: domain_result
+
+    - name: TEMP debug
+      debug:
+        var: domain_result
+
+#    - name: Print domain info
+#      debug:
+#        msg: |
+#          DOMAIN CREATED:
+#          Domain: {{ domain_result.results[0].domain.domain }}
+#      when: domain_result.changed
+
+    - name: Print domain info
+      debug:
+        var: domain_result.results[{{ item }}].domain.domain
+      with_sequence: start=0 end={{ domain_result.results | length-1 }}
+      when: domain_result.changed

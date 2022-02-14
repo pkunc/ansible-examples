@@ -1,9 +1,12 @@
 # vars.yml
 ---
 
+# GLOBAL PARAMETERS
+# Linode API Token
 api_token: "{{ lookup('env', 'LINODE_ACCESS_TOKEN') }}"
 
-# default parameters
+# SERVER PARAMETERS
+# default server parameters
 default_server:
   label: 'linode-{{ 100 |random }}'
   type: g6-nanode-1
@@ -18,6 +21,7 @@ default_server:
     - env=demo
   api_token: "{{ api_token }}"
 
+# individual servers paramters (different than the default ones)
 registry:
   label: registry.showcase.systems
 
@@ -32,3 +36,15 @@ create_servers:
 # list of servers you want to delete
 delete_servers:
   - student.showcase.systems
+
+# DOMAIN PARAMETERS
+domain_showcase_red:
+  domain: showcase.red
+  type: master
+  soa_email: petr.kunc@gmail.com
+
+create_domains:
+  - '{{ domain_showcase_red }}'
+
+delete_domains:
+  - '{{ domain_showcase_red }}'

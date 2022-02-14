@@ -1,0 +1,39 @@
+#!/usr/bin/env ansible-playbook
+# delete-domain.yml
+
+# Example usage: ansible-playbook delete-domain.yml
+---
+- name: Delete Linode domain
+  hosts: localhost
+  vars_files: vars.yml
+
+  tasks:
+    - name: Check if the token is set
+      fail:
+        msg: 'Linode token not set. Use "export LINODE_ACCESS_TOKEN=..."'
+      when: not lookup('env', 'LINODE_ACCESS_TOKEN')
+
+    - name: Delete (multiple) domains
+      linode.cloud.domain:
+        domain: '{{ item.domain }}'
+        state: absent
+        api_token: '{{ api_token }}'
+      loop: '{{ create_domains }}'
+      register: domain_result
+
+    - name: TEMP debug
+      debug:
+        var: domain_result
+
+#    - name: Print domain info
+#      debug:
+#        msg: |
+#          DOMAIN DELETED:
+#          Domain: {{ domain_result[0].domain.domain }}
+#      when: domain_result.changed
+
+    - name: Print domain info
+      debug:
+        var: domain_result.results[{{ item }}].domain.domain
+      with_sequence: start=0 end={{ domain_result.results | length-1 }}
+      when: domain_result.changed
