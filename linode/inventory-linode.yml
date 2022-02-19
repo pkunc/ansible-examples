@@ -1,5 +1,12 @@
 # inventory-linode.yml
 ---
 plugin: community.general.linode
+#regions:
+#  - eu-central
 groups:
-  prod: "'prod' in (tags|list)"
+  demo: "'demo' in (tags|list)"
+keyed_groups:
+  - key: tags
+    separator: ''
+  - key: region
+    prefix: region

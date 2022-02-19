@@ -18,7 +18,7 @@ default_server:
     - '{{ lookup("file", "~/.ssh/id_ecdsa_linode.pub") }}'
   group: app
   tags:
-    - env=demo
+    - demo
   api_token: "{{ api_token }}"
 
 # individual servers paramters (different than the default ones)
