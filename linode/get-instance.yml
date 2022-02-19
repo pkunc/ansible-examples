@@ -1,0 +1,36 @@
+#!/usr/bin/env ansible-playbook
+# get-instance.yml
+
+# Example usage: ansible-playbook get-instance.yml
+---
+- name: Get info for multiple server instances
+  hosts: localhost
+  vars_files: vars.yml
+
+  tasks:
+    - name: Check if the token is set
+      fail:
+        msg: 'Linode token not set. Use "export LINODE_ACCESS_TOKEN=..."'
+      when: not lookup('env', 'LINODE_ACCESS_TOKEN')
+
+    - name: Get info about Linode instances
+      linode.cloud.instance_info:
+        id: '{{ hostvars[item].id }}'
+        api_token: "{{ lookup('env', 'LINODE_ACCESS_TOKEN') }}"
+      loop: '{{ groups["all"] }}'
+      register: instances_result
+
+    - name: Print results
+      ansible.builtin.debug:
+        msg: |
+          - Label: {{ item.instance.label }}
+          - Region: {{ item.instance.region }}
+          - Type: {{ item.instance.type }}
+          - IP: {{ item.instance.ipv4 }}
+          - Created: {{ item.instance.created }}
+          - Status: {{ item.instance.status }}
+          - Group: {{ item.instance.group }}
+          - Tags: {{ item.instance.tags }}
+      loop: '{{ instances_result.results | list }}'
+      loop_control:
+        label: '{{ item.instance.label }}'
