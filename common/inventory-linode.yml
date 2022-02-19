@@ -1,0 +1,3 @@
+# inventory-linode.yml
+---
+plugin: community.general.linode
