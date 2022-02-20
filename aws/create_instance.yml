@@ -1,0 +1,48 @@
+#!/usr/bin/env ansible-playbook
+# create-instance.yml
+
+# Example usage: ansible-playbook create-instance.yml
+---
+- name: Create EC2 instanace
+  hosts: localhost
+  vars_files: vars.yml
+
+  tasks:
+    - name: Create security group (rules for outgoing and incoming traffic)
+      amazon.aws.ec2_group:
+        name: 'demo-servers-sg'
+        description: 'Security group for demo servers'
+        rules:
+          - proto: tcp  # ssh
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+            rule_desc: 'Allow all on port 22'
+          - proto: tcp  # http
+            ports:
+              - 80
+            cidr_ip: 0.0.0.0/0
+            rule_desc: 'Allow all on port 80'
+          - proto: tcp  # https
+            from_port: 443
+            to_port: 443
+            cidr_ip: 0.0.0.0/0
+            rule_desc: 'Allow all on port 443'
+      register: security_group_result
+
+    - name: Store security group id
+      ansible.builtin.set_fact:
+        group_id: '{{ security_group_result.group_id }}'
+
+    - name: Create EC2 instance
+      amazon.aws.ec2_instance:
+        name: "my-ec2-instance"
+        key_name: '{{ default_instance.key_name }}'
+        instance_type: '{{ default_instance.instance_type }}'
+        security_group: '{{ group_id }}'
+        network:
+          assign_public_ip: true
+        image_id: '{{ default_instance.image_id }}'
+        tags:
+          Environment: Demo
+      register: instance_result

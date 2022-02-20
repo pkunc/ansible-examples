@@ -1,0 +1,8 @@
+# vars.yml
+---
+
+# default EC2 instance parameters
+default_instance:
+  instance_type: t2.micro
+  image_id: ami-033b95fb8079dc481  # Amazon Linux 2, 64-bit x86
+  key_name: ansibleuser
