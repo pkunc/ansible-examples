@@ -1,0 +1,14 @@
+{% set server = hostvars[item] %}
+      ==================
+        SUMMARY REPORT
+      ==================
+
+🖥️   Server info
+---------------
+Nodename:   {{ server.ansible_nodename }}
+Hostname:   {{ server.hostname_result.stdout }}
+Uptime:    {{ server.uptime_result.stdout }}
+
+Is the server registry?
+{% if server.ansible_hostname == 'registry' %}
+✅{% else %}❌{% endif %} Node: {{ server.ansible_hostname }} 

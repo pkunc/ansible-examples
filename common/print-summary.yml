@@ -1,0 +1,37 @@
+#!/usr/bin/env ansible-playbook
+# print-summary.yml
+---
+- name: Get instance info
+  hosts: all
+  remote_user: root
+
+  tasks:
+    - name: Store the first custom fact
+      ansible.builtin.command:
+        cmd: 'hostname'
+      register: hostname_result
+      changed_when: hostname_result.rc != 0
+
+    - name: Store the second custom fact
+      ansible.builtin.command:
+        cmd: 'uptime'
+      register: uptime_result
+      changed_when: uptime_result.rc != 0
+
+    - name: Print facts directly, as text
+      debug:
+        msg: |
+          - Hostname (default facts): {{ hostvars[item]["ansible_hostname"] }}
+          - Nodename (default facts): {{ hostvars[item]["ansible_nodename"] }}
+          - Hostname (gathered output from runtime): {{ hostvars[item]["hostname_result"]["stdout"] }}
+          - Uptime (gathered output from runtime):{{ hostvars[item]["uptime_result"]["stdout"] }}
+      loop: '{{ groups["all"] }}'
+      run_once: true
+      delegate_to: localhost
+
+    - name: Print facts through the template
+      debug:
+        msg: "{{ lookup('template', 'templates/summary.j2') }}"
+      loop: '{{ groups["all"] }}'
+      run_once: true
+      delegate_to: localhost
