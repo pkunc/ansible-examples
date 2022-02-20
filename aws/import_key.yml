@@ -1,0 +1,39 @@
+#!/usr/bin/env ansible-playbook
+# import-key.yml
+
+# Example usage: ansible-playbook import-key.yml
+---
+- name: Import your public key into AWS
+  hosts: localhost
+  vars_files: vars.yml
+
+  tasks:
+    - name: Import public key
+      ansible.builtin.command:
+        cmd: 'aws ec2 import-key-pair --key-name "ansibleuser" --public-key-material fileb://~/.ssh/id_ed25519_aws_ansibleuser.pub'
+      register: public_key_result
+      changed_when: public_key_result.rc == 0
+      failed_when:
+        - '"already exists" not in public_key_result.stderr'
+        - public_key_result.rc == 254
+
+    - name: Get all key pairs
+      ansible.builtin.command:
+        cmd: 'aws ec2 describe-key-pairs'
+      register: keypairs_result
+      changed_when: keypairs_result.rc != 0
+
+    - name: Convert the result from text to JSON
+      ansible.builtin.set_fact:
+        keypairs_json_result: '{{ keypairs_result.stdout | from_json }}'
+
+    - name: Print all key pairs for the current user
+      ansible.builtin.debug:
+        msg: |
+
+          KeyPairId: {{ item.KeyPairId }}
+          - KeyName: {{ item.KeyName }}
+          - KeyType: {{ item.KeyType }}
+      loop: '{{ keypairs_json_result["KeyPairs"] | list }}'
+      loop_control:
+        label: '{{ item.KeyPairId }}'
