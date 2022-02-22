@@ -40,9 +40,16 @@
         key_name: '{{ default_instance.key_name }}'
         instance_type: '{{ default_instance.instance_type }}'
         security_group: '{{ group_id }}'
-        network:
-          assign_public_ip: true
         image_id: '{{ default_instance.image_id }}'
         tags:
           Environment: Demo
       register: instance_result
+
+    - name: Print summary about instance cretion
+      ansible.builtin.debug:
+        msg: |
+          Instance created:
+          - Instance ID: {{ instance_result.instance_ids[0] }}
+          - Instance type: {{ instance_result.instances[0].instance_type }}
+          - State: {{ instance_result.instances[0].state.name }}
+          - Tags: {{ instance_result.instances[0].tags }}
