@@ -1,0 +1,26 @@
+#!/usr/bin/env ansible-playbook
+# get-instance-info.yml
+
+# Example usage: ansible-playbook get-instance-info.yml
+---
+- name: Create EC2 instanace
+  hosts: localhost
+  vars_files: vars.yml
+
+  tasks:
+    - name: Get info about instances that match the condition
+      amazon.aws.ec2_instance_info:
+        filters:
+          'tag:Environment': Demo
+      register: instance_result
+
+    - name: TEMP Debug Print summary about instance cretion
+      ansible.builtin.debug:
+        var: instance_result
+
+    - name: Print facts through the template
+      debug:
+        msg: "{{ lookup('template', 'templates/instance-info.j2') }}"
+      loop: '{{ instance_result.instances | sort(attribute="tags.Name") | list }}'
+      loop_control:
+        label: '{{ item.instance_id }}'
