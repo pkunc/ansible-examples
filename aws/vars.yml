@@ -3,8 +3,14 @@
 
 # default EC2 instance parameters
 default_instance:
-  instance_type: t2.micro
+  instance_type: t3.micro
   image_id: ami-033b95fb8079dc481  # Amazon Linux 2, 64-bit x86
   key_name: ansibleuser
   network:
     assign_public_ip: true
+  volumes:
+    - device_name: /dev/xvda
+      ebs:
+        delete_on_termination: true
+        volume_size: 16
+        volume_type: gp2

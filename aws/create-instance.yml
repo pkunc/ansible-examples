@@ -41,6 +41,8 @@
         instance_type: '{{ default_instance.instance_type }}'
         security_group: '{{ group_id }}'
         image_id: '{{ default_instance.image_id }}'
+        network: '{{ default_instance.network }}'
+        volumes: '{{ default_instance.volumes }}'
         tags:
           Environment: Demo
       register: instance_result
