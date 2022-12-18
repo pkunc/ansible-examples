@@ -14,16 +14,16 @@ The purpose of this demo server is to test the latest _HCL Domino V12_ features.
 ## Access
 
 ### Server
-Server hostname: **leo.showcase.blue**
+Server hostname: **domino.showcase.blue**
 
 The demo server provides the following services:
 
 | Name | Description | URL |
 |------|-------------|-----|
-| Web | Basic web access | https://leo.showcase.blue |
-| Verse | Domino web mail | https://leo.showcase.blue/verse |
-| Traveler | Domino mobile mail | https://leo.showcase.blue/traveler |
-| Nomad | Web access to Domino apps | https://leo.showcase.blue:9443 |
+| Web | Basic web access | https://domino.showcase.blue |
+| Verse | Domino web mail | https://domino.showcase.blue/verse |
+| Traveler | Domino mobile mail | https://domino.showcase.blue/traveler |
+| Nomad | Web access to Domino apps | https://domino.showcase.blue:9443 |
 
 
 
