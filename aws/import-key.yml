@@ -8,14 +8,21 @@
   vars_files: vars.yml
 
   tasks:
-    - name: Import public key
-      ansible.builtin.command:
-        cmd: 'aws ec2 import-key-pair --key-name "ansibleuser" --public-key-material fileb://~/.ssh/id_ed25519_aws_ansibleuser.pub'
-      register: public_key_result
-      changed_when: public_key_result.rc == 0
-      failed_when:
-        - '"already exists" not in public_key_result.stderr'
-        - public_key_result.rc == 254
+    # - name: Import public key
+    #   ansible.builtin.command:
+    #     cmd: 'aws ec2 import-key-pair --key-name "{{ aws_key_name }}" --public-key-material fileb://~/.ssh/id_ed25519_aws_ansibleuser.pub'
+    #   register: public_key_result
+    #   changed_when: public_key_result.rc == 0
+    #   failed_when:
+    #     - '"already exists" not in public_key_result.stderr'
+    #     - public_key_result.rc == 254
+
+    - name: Import public key to a EC2 ssh key
+      amazon.aws.ec2_key:
+        name: '{{ key_name }}'
+        key_material: "{{ lookup('file', local_public_key_path) }}"
+        region: '{{ region }}'
+        tags: '{{ org_tags | combine(project_tags) }}'
 
     - name: Get all key pairs
       ansible.builtin.command:
@@ -30,7 +37,6 @@
     - name: Print all key pairs for the current user
       ansible.builtin.debug:
         msg: |
-
           KeyPairId: {{ item.KeyPairId }}
           - KeyName: {{ item.KeyName }}
           - KeyType: {{ item.KeyType }}

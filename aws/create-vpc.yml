@@ -1,0 +1,63 @@
+#!/usr/bin/env ansible-playbook
+# create-vpc.yml
+
+# Example usage: ansible-playbook create-vpc.yml
+---
+
+- name: Create VPC
+  hosts: localhost
+  vars_files: vars.yml
+
+  tasks:
+
+    - name: Create VPC
+      amazon.aws.ec2_vpc_net:
+        name: '{{ project_name }} - VPC'
+        cidr_block: 10.0.0.0/16
+        region: '{{ region }}'
+        tags: '{{ org_tags | combine(project_tags) }}'
+      register: vpc_result
+
+    - name: Create subnet
+      vars:
+        name_tag:
+          Name: '{{ project_name }} - Subnet'
+      amazon.aws.ec2_vpc_subnet:
+        state: present
+        vpc_id: '{{ vpc_result.vpc.id }}'
+        az: '{{ availability_zone }}'
+        cidr: '10.0.10.0/24'
+        map_public: true
+        tags: '{{ org_tags | combine(project_tags, name_tag) }}'
+      register: subnet_result
+
+    - name: Create Internet gateway
+      vars:
+        name_tag:
+          Name: '{{ project_name }} - IG'
+      amazon.aws.ec2_vpc_igw:
+        vpc_id: '{{ vpc_result.vpc.id }}'
+        region: '{{ region }}'
+        tags: '{{ org_tags | combine(project_tags, name_tag) }}'
+      register: igw_result
+
+    - name: Get the exiting Routing Table
+      amazon.aws.ec2_vpc_route_table_info:
+        filters:
+          vpc-id: '{{ vpc_result.vpc.id }}'
+      register: rt_result
+
+    - name: Add Internet Gateway to Route Table
+      vars:
+        name_tag:
+          Name: '{{ project_name }} - RT'
+      amazon.aws.ec2_vpc_route_table:
+        vpc_id: '{{ vpc_result.vpc.id }}'
+        region: '{{ region }}'
+        lookup: id
+        route_table_id: '{{ rt_result.route_tables[0].id }}'
+        tags: '{{ org_tags | combine(project_tags, name_tag) }}'
+        routes:
+          - dest: 0.0.0.0/0
+            gateway_id: "{{ igw_result.gateway_id }}"
+      register: route_table_result

@@ -3,55 +3,60 @@
 
 # Example usage: ansible-playbook create-instance.yml
 ---
+
 - name: Create EC2 instanace
   hosts: localhost
   vars_files: vars.yml
 
   tasks:
-    - name: Create security group (rules for outgoing and incoming traffic)
-      amazon.aws.ec2_group:
-        name: 'demo-servers-sg'
-        description: 'Security group for demo servers'
-        rules:
-          - proto: tcp  # ssh
-            from_port: 22
-            to_port: 22
-            cidr_ip: 0.0.0.0/0
-            rule_desc: 'Allow all on port 22'
-          - proto: tcp  # http
-            ports:
-              - 80
-            cidr_ip: 0.0.0.0/0
-            rule_desc: 'Allow all on port 80'
-          - proto: tcp  # https
-            from_port: 443
-            to_port: 443
-            cidr_ip: 0.0.0.0/0
-            rule_desc: 'Allow all on port 443'
-      register: security_group_result
 
-    - name: Store security group id
+# ----- GET IDS OF EXISTING OBJECTS
+
+    - name: Get Security Group ID
+      amazon.aws.ec2_security_group_info:
+        filters:
+          'tag:Project': '{{ project_name }}'
+      register: sg_result
+
+    - name: Store VPC and Security Group ID
       ansible.builtin.set_fact:
-        group_id: '{{ security_group_result.group_id }}'
+        group_id: '{{ sg_result.security_groups[0].group_id }}'
+        vpc_id: '{{ sg_result.security_groups[0].vpc_id }}'
+
+    - name: Get Subnet ID
+      amazon.aws.ec2_vpc_subnet_info:
+        filters:
+          vpc-id: '{{ vpc_id }}'
+          availability-zone: '{{ availability_zone }}'
+      register: subnet_result
+
+    - name: Store VPC and Security Group ID
+      ansible.builtin.set_fact:
+        subnet_id: '{{ subnet_result.subnets[0].subnet_id }}'
+
+# ----- CREATE INSTANCE
 
     - name: Create EC2 instance
       amazon.aws.ec2_instance:
-        name: "my-ec2-instance"
-        key_name: '{{ default_instance.key_name }}'
-        instance_type: '{{ default_instance.instance_type }}'
+        name: '{{ item }}'
+        region: '{{ region }}'
+        vpc_subnet_id: '{{ subnet_id }}'
+        key_name: '{{ key_name }}'
+        instance_type: '{{ instance.instance_type }}'
         security_group: '{{ group_id }}'
-        image_id: '{{ default_instance.image_id }}'
-        network: '{{ default_instance.network }}'
-        volumes: '{{ default_instance.volumes }}'
-        tags:
-          Environment: Demo
+        image_id: '{{ instance.image_id }}'
+        network: '{{ instance.network }}'
+        volumes: '{{ instance.volumes }}'
+        tags: '{{ org_tags | combine(project_tags) }}'
+      loop: '{{ server_names }}'
       register: instance_result
 
     - name: Print summary about instance cretion
       ansible.builtin.debug:
         msg: |
-          Instance created:
-          - Instance ID: {{ instance_result.instance_ids[0] }}
-          - Instance type: {{ instance_result.instances[0].instance_type }}
-          - State: {{ instance_result.instances[0].state.name }}
-          - Tags: {{ instance_result.instances[0].tags }}
+          [✔]  Instance created.
+          [ℹ]  Instance name:   {{ instance_result | json_query("results[*].instances[0].tags.Name") | join(", ") }}
+          [ℹ]  Instance ID:     {{ instance_result | json_query("results[*].instances[0].instance_id") | join(", ") }}
+          [ℹ]  Instance type:   {{ instance_result.results[0].instances[0].instance_type }}
+          [ℹ]  State:           {{ instance_result | json_query("results[*].instances[0].state.name") | join(", ") }}
+          [ℹ]  Tags:            {{ instance_result.results[0].instances[0].tags | to_nice_yaml }}

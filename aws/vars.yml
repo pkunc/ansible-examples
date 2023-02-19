@@ -1,11 +1,35 @@
 # vars.yml
 ---
 
-# default EC2 instance parameters
-default_instance:
+project_name: My Project
+
+key_name: ansibleuser
+local_public_key_path: ~/.ssh/id_rsa.pub
+region: us-east-1
+availability_zone: us-east-1a
+
+# env_list: {
+#   petr: {
+#     key_name: ansibleuser,
+#     local_public_key_path: ~/.ssh/id_ed25519_aws_ansibleuser.pub,
+#     region: us-east-1,
+#     availability_zone: us-east-1a
+#   },
+#   hcl: {
+#     key_name: domino-kubernetes,
+#     local_public_key_path: ~/.ssh/id_ed25519_aws_hcl_petrkunc.pub,
+#     region: us-east-1,
+#     availability_zone: us-east-1a
+#   }
+# }
+
+# selected_env: petr    # hcl | petr
+# env: '{{ env_list[ selected_env ] }}'
+
+# EC2 instance parameters.
+instance:
   instance_type: t3.micro
   image_id: ami-033b95fb8079dc481  # Amazon Linux 2, 64-bit x86
-  key_name: ansibleuser
   network:
     assign_public_ip: true
   volumes:
@@ -14,3 +38,19 @@ default_instance:
         delete_on_termination: true
         volume_size: 16
         volume_type: gp2
+
+# List of server, that will be created / stopped / deleted.
+# Server name is used as an instance "Name" tag.
+server_names:
+  - server.demo.com
+
+# Organization AWS tags, mandatory for all elements.
+org_tags:
+  Asset Purpose: Testing
+  Business Owner: John Smith
+  Primary Admin: Jane Doe
+
+# (optional) Project specific tags,
+project_tags:
+  Project: '{{ project_name }}'
+  Environment: Test

@@ -1,8 +1,17 @@
 # inventory_aws_ec2.yml
 ---
 plugin: amazon.aws.aws_ec2
+
 regions:
   - us-east-1
+
+filters:
+  tag:Project:
+    - Domino on Kubernetes
+
+hostnames:
+  - tag:Name
+
 keyed_groups:
   # each prefix below becomes a dynamic inventory list used by Ansible
   - key: tags

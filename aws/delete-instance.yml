@@ -1,0 +1,56 @@
+#!/usr/bin/env ansible-playbook
+# stop-instance.yml
+
+# Example usage: ansible-playbook stop-instance.yml
+---
+
+- name: Stop EC2 instanace
+  hosts: localhost
+  vars_files: vars.yml
+
+  tasks:
+
+# ----- PREPARE FOR DELETING
+
+    - name: Get list of instances matching the filter criteria
+      amazon.aws.ec2_instance_info:
+        filters:
+          'tag:Project': '{{ project_name }}'
+      register: filter_result
+
+    - name: Store list of instances
+      ansible.builtin.set_fact:
+        instances: '{{ filter_result | json_query("instances[*].tags.Name") }}'
+
+    - name: Confirm stopping
+      ansible.builtin.pause:
+        prompt: |
+          Do you want to stop these servers ( y / n )?
+          {{ instances | sort | to_nice_yaml }}
+      register: delete_prompt
+
+    - name: End when user presses "n"
+      ansible.builtin.fail:
+        msg: Ending the procedure, nothing war deleted.
+      when: delete_prompt.user_input | lower != "y"
+
+
+# ----- DELETING THE INSTANCE
+
+    - name: Delete EC2 instance
+      amazon.aws.ec2_instance:
+        filters:
+          'tag:Project': '{{ project_name }}'
+          'tag:Name': '{{ instances }}'
+        state: terminated
+      register: instance_result
+
+    - name: Print summary about instance deleting
+      ansible.builtin.debug:
+        msg: |
+          [✔]  Instance deleted.
+          [ℹ]  Instance name:   {{ instance_result | json_query("instances[*].tags.Name") | join(", ") }}
+          [ℹ]  Instance ID:     {{ instance_result | json_query("instances[*].instance_id") | join(", ") }}
+          [ℹ]  Instance type:   {{ instance_result.instances[0].instance_type }}
+          [ℹ]  State:           {{ instance_result | json_query("instances[*].state.name") | join(", ") }}
+          [ℹ]  Tags:            {{ instance_result.instances[0].tags | to_nice_yaml }}
