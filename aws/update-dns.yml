@@ -1,0 +1,31 @@
+#!/usr/bin/env ansible-playbook
+# update-dns.yml
+
+# Example usage: ansible-playbook update-dns.yml
+---
+
+- name: Update DNS record
+  hosts: localhost
+  vars_files: vars.yml
+
+  tasks:
+
+# ----- UPDATE DNS RECORD
+
+    - name: Update DNS record for matching instances
+      amazon.aws.route53:
+        state: present
+        zone: '{{ (item | split(".", 1))[1] }}'
+        record: '{{ item }}'
+        type: CNAME
+        ttl: 120
+        value: '{{ hostvars[item].public_dns_name }}'
+        overwrite: true
+        wait: true
+      loop: '{{ server_names }}'
+
+    - name: Print DNS changes summary
+      ansible.builtin.debug:
+        msg: |
+          [ℹ]  CNAME record updated: {{ item }} -> {{ hostvars[item].public_dns_name }}
+      loop: '{{ server_names }}'
