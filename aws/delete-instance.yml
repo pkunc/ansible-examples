@@ -4,7 +4,7 @@
 # Example usage: ansible-playbook stop-instance.yml
 ---
 
-- name: Stop EC2 instanace
+- name: Stop EC2 instance
   hosts: localhost
   vars_files: vars.yml
 
@@ -16,23 +16,27 @@
       amazon.aws.ec2_instance_info:
         filters:
           'tag:Project': '{{ project_name }}'
+          instance-state-name: [running, pending, stopping, stopped, shutting-down]
       register: filter_result
 
     - name: Store list of instances
       ansible.builtin.set_fact:
         instances: '{{ filter_result | json_query("instances[*].tags.Name") }}'
 
-    - name: Confirm stopping
+    - name: Confirm deleting
       ansible.builtin.pause:
         prompt: |
-          Do you want to stop these servers ( y / n )?
+          Do you want to delete these servers ( y / n )?
           {{ instances | sort | to_nice_yaml }}
       register: delete_prompt
+      when: instances | length > 0
 
     - name: End when user presses "n"
       ansible.builtin.fail:
         msg: Ending the procedure, nothing war deleted.
-      when: delete_prompt.user_input | lower != "y"
+      when:
+        - instances | length > 0
+        - (delete_prompt.user_input is defined) and (delete_prompt.user_input | lower != "y")
 
 
 # ----- DELETING THE INSTANCE
@@ -44,6 +48,7 @@
           'tag:Name': '{{ instances }}'
         state: terminated
       register: instance_result
+      when: instances | length > 0
 
     - name: Print summary about instance deleting
       ansible.builtin.debug:
@@ -54,3 +59,30 @@
           [ℹ]  Instance type:   {{ instance_result.instances[0].instance_type }}
           [ℹ]  State:           {{ instance_result | json_query("instances[*].state.name") | join(", ") }}
           [ℹ]  Tags:            {{ instance_result.instances[0].tags | to_nice_yaml }}
+      when: instances | length > 0
+
+    - name: Print summary - nothing to delete
+      ansible.builtin.debug:
+        msg: |
+          [!]  Nothing to delete.
+      when: instances | length == 0
+
+
+# ----- DELETE DNS RECORD
+
+    - name: Delete DNS record of deleted instance
+      amazon.aws.route53:
+        state: absent
+        zone: '{{ (item | split(".", 1))[1] }}'
+        record: '{{ item }}'
+        type: CNAME
+        wait: true
+      loop: '{{ instances }}'
+      when: instances | length > 0
+
+    - name: Print DNS changes summary
+      ansible.builtin.debug:
+        msg: |
+          [ℹ]  CNAME record deleted: {{ item }} -> {{ hostvars[item].public_dns_name }}
+      loop: '{{ instances }}'
+      when: instances | length > 0

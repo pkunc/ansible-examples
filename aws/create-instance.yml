@@ -4,7 +4,7 @@
 # Example usage: ansible-playbook create-instance.yml
 ---
 
-- name: Create EC2 instanace
+- name: Create EC2 instance
   hosts: localhost
   vars_files: vars.yml
 
@@ -34,6 +34,7 @@
       ansible.builtin.set_fact:
         subnet_id: '{{ subnet_result.subnets[0].subnet_id }}'
 
+
 # ----- CREATE INSTANCE
 
     - name: Create EC2 instance
@@ -48,6 +49,9 @@
         network: '{{ instance.network }}'
         volumes: '{{ instance.volumes }}'
         tags: '{{ org_tags | combine(project_tags) }}'
+        state: started
+        wait: true
+        wait_timeout: 120
       loop: '{{ server_names }}'
       register: instance_result
 
@@ -60,3 +64,4 @@
           [ℹ]  Instance type:   {{ instance_result.results[0].instances[0].instance_type }}
           [ℹ]  State:           {{ instance_result | json_query("results[*].instances[0].state.name") | join(", ") }}
           [ℹ]  Tags:            {{ instance_result.results[0].instances[0].tags | to_nice_yaml }}
+      when: instance_result.changed
