@@ -21,25 +21,13 @@
         vpc_id: '{{ vpc_result.vpcs[0].id }}'
 
     - name: Create security group
+      vars:
+        name_tag:
+          Name: '{{ project_name }} - SG'
       amazon.aws.ec2_security_group:
         name: '{{ project_name }} - SG'
         description: '{{ project_name }} Security Group'
-        rules:
-          - proto: tcp  # ssh
-            from_port: 22
-            to_port: 22
-            cidr_ip: 0.0.0.0/0
-            rule_desc: 'Allow all on port 22'
-          - proto: tcp  # http
-            from_port: 80
-            to_port: 80
-            cidr_ip: 0.0.0.0/0
-            rule_desc: 'Allow all on port 80'
-          - proto: tcp  # https
-            from_port: 443
-            to_port: 443
-            cidr_ip: 0.0.0.0/0
-            rule_desc: 'Allow all on port 443'
+        rules: '{{ sg_ports }}'
         vpc_id: '{{ vpc_id }}'
-        tags: '{{ org_tags | combine(project_tags) }}'
+        tags: '{{ org_tags | combine(project_tags, name_tag) }}'
       # register: sg_result
