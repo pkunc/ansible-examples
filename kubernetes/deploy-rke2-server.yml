@@ -1,0 +1,71 @@
+#!/usr/bin/env ansible-playbook
+# deploy-rke2-server.yml
+
+# Example usage:
+#  ansible-playbook deploy-rke2-server.yml
+
+---
+- name: Deploy Rancher Kubernetes Engine 2 (RKE2) on Server nodes
+  hosts: servers
+
+  tasks:
+
+    - name: Set port forwarding
+      become: true
+      ansible.posix.sysctl:
+        name: '{{ item.field }}'
+        value: '{{ item.value }}'
+        sysctl_file: /etc/sysctl.d/90-rke2.conf
+        sysctl_set: true
+        state: present
+        reload: true
+      loop:
+        - { field: net.ipv4.conf.all.forwarding, value: 1 }
+        - { field: net.ipv6.conf.all.forwarding, value: 1 }
+
+    - name: Download install script
+      ansible.builtin.get_url:
+        url: https://get.rke2.io
+        dest: /tmp/install.sh
+        mode: 'u=rwx,g=rx,o=rx'
+
+    - name: Install RKE2 as a Server
+      become: true
+      ansible.builtin.shell:
+        cmd: /tmp/install.sh
+      register: rke2_result
+      changed_when:
+        - '"Nothing to do" not in rke2_result.stdout'
+
+    - name: Copy and customize config files
+      become: true
+      ansible.builtin.template:
+        src: 'templates/{{ item }}'
+        dest: '/etc/rancher/rke2/{{ item }}'
+        mode: u=rw,g=r,o=r
+      loop:
+        - config.yaml
+
+    - name: Start service rke2-server and enable for autostart
+      become: true
+      ansible.builtin.service:
+        name: rke2-server
+        state: started
+        enabled: true
+
+    - name: Creating a symlink for kubectl
+      become: true
+      ansible.builtin.file:
+        src: /var/lib/rancher/rke2/bin/kubectl
+        dest: /usr/bin/kubectl
+        state: link
+
+    - name: Get content of token file
+      become: true
+      ansible.builtin.command: cat /var/lib/rancher/rke2/server/node-token
+      register: token_file_result
+      changed_when: token_file_result.rc != 0
+
+    - name: Print the RKE2 token
+      ansible.builtin.debug:
+        msg: 'Use this token to connect RKE2 Agent notes to this Server: {{ token_file_result.stdout }}'

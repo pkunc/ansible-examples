@@ -1,0 +1,76 @@
+#!/usr/bin/env ansible-playbook
+# deploy-rke2-agent.yml
+
+# Example usage:
+#  ansible-playbook deploy-rke2-agent.yml
+
+---
+- name: Deploy Rancher Kubernetes Engine 2 (RKE2) on Agent nodes
+  hosts: agents
+
+  vars:
+    # Get the token from /var/lib/rancher/rke2/server/node-token file on the Server RKE2 node.
+    # If you for not put your token here, you will be prompted for it at a playbook runtime.
+    # Example:
+    # token: 'K108473efe13616ebe6c9008f189c0f014a61bbfd673f3c15fb9e9593f4c11802aa::server:3de24a0c7678257badfe0ed9ba97c99b'
+    token: ''
+
+  tasks:
+    - name: Prompt for token when not set as variable
+      ansible.builtin.pause:
+        prompt: 'Paste the server access token'
+      register: token_prompt
+      when: token | length == 0
+
+    - name: Store token as a fact
+      ansible.builtin.set_fact:
+        access_token: '{{ (token | length == 0) | ternary (token_prompt.user_input, token) }}'
+
+    - name: Set port forwarding
+      become: true
+      ansible.posix.sysctl:
+        name: '{{ item.field }}'
+        value: '{{ item.value }}'
+        sysctl_file: /etc/sysctl.d/90-rke2.conf
+        sysctl_set: true
+        state: present
+        reload: true
+      loop:
+        - { field: net.ipv4.conf.all.forwarding, value: 1 }
+        - { field: net.ipv6.conf.all.forwarding, value: 1 }
+
+    - name: Download install script
+      ansible.builtin.get_url:
+        url: https://get.rke2.io
+        dest: /tmp/install.sh
+        mode: 'u=rwx,g=rx,o=rx'
+
+    - name: Install RKE2 as an Agent
+      become: true
+      ansible.builtin.shell:
+        cmd: 'INSTALL_RKE2_TYPE="agent" /tmp/install.sh'
+      register: rke2_result
+      changed_when:
+        - '"Nothing to do" not in rke2_result.stdout'
+
+    - name: Get RKE2 Server hostname
+      vars:
+        server_name: '{{ groups["servers"][0] }}'
+      ansible.builtin.set_fact:
+        server_hostname: '{{ hostvars[server_name].ansible_host }}'
+
+    - name: Copy and customize config files
+      become: true
+      ansible.builtin.template:
+        src: 'templates/{{ item }}'
+        dest: '/etc/rancher/rke2/{{ item }}'
+        mode: u=rw,g=r,o=r
+      loop:
+        - config.yaml
+
+    - name: Start service rke2-server and enable for autostart
+      become: true
+      ansible.builtin.service:
+        name: rke2-agent
+        state: started
+        enabled: true
