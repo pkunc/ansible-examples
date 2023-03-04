@@ -1,0 +1,57 @@
+# vars.yml
+---
+
+project_name: Domino on Kubernetes
+
+key_name: ansibleuser
+local_public_key_path: ~/.ssh/id_ed25519_aws_ansibleuser.pub
+region: us-east-1
+availability_zone: us-east-1a
+
+# EC2 instance parameters
+instance:
+  instance_type: t3a.medium
+  image_id: ami-0aedf6b1cb669b4c7  # CentOS 7, us-east-1
+  network:
+    assign_public_ip: true
+  volumes:
+    - device_name: /dev/sda1
+      ebs:
+        delete_on_termination: true
+        volume_size: 16
+        volume_type: gp2
+
+# List of server, that will be created / stopped / deleted.
+# Server name is used as an instance "Name" tag.
+server_names:
+  - kube1.showcase.blue
+  # - kube2.showcase.blue
+
+# Organization AWS tags, mandatory for all AWS elements.
+org_tags:
+  Area: Demo
+  Asset Purpose: Domino labs
+  Business Owner: Petr Kunc
+  Primary Admin: Petr Kunc
+
+# (optional) Project specific tags.
+project_tags:
+  Project: '{{ project_name }}'
+  Environment: Test
+  Role: Kubernetes
+  Event: Engage
+
+# Ports that will be open for inbound access in a Security Group
+sg_ports:
+  - ports: 22
+    rule_desc: SSH access for all
+    cidr_ip: 0.0.0.0/0
+  - ports: 80
+    rule_desc: HTTP access for all
+    cidr_ip: 0.0.0.0/0
+  - ports: 443
+    rule_desc: HTTPS access for all
+    cidr_ip: 0.0.0.0/0
+  - ports: 6443
+    rule_desc: kubectl access for all
+    cidr_ip: 0.0.0.0/0
