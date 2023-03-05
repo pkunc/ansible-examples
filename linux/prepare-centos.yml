@@ -1,0 +1,80 @@
+#!/usr/bin/env ansible-playbook
+# prepare-centos.yml
+
+# Example usage:
+#  ansible-playbook prepare-centos.yml -i server.example.com,
+# Do not forget the comma (,) in the inventory paramter (-i)!
+
+---
+- name: Gather info
+  hosts: all
+
+  vars:
+    firewalld: stopped
+    selinux: disabled    # enforcing, permissive, disabled
+    packages_to_install:
+      - nc
+      - nmap
+      - net-tools
+
+  tasks:
+
+# ----- SET HOSTNAME
+
+    - name: Set instance hostname
+      become: true
+      ansible.builtin.hostname:
+        name: '{{ ansible_host }}'
+
+
+# ----- INSTALL PACKAGES
+
+    - name: Update all packages
+      become: true
+      ansible.builtin.yum:
+        name: '*'
+        state: latest
+
+    - name: Install required packages
+      become: true
+      ansible.builtin.package:
+        name: '{{ item }}'
+        state: present
+      loop: '{{ packages_to_install }}'
+
+
+# ----- CONFIGURE FIREWALL
+
+    - name: Configure firewalld (enable or disable)
+      ansible.builtin.service:
+        name: firewalld
+        state: '{{ firewalld }}'
+        enabled: true
+      ignore_errors: true
+
+
+# ----- DISABLE UNWANTED SERVICES
+
+    - name: Disable specified services
+      become: true
+      ansible.builtin.service:
+        name: '{{ item }}'
+        state: stopped
+        enabled: false
+      loop:
+        - postfix
+
+
+# ----- CONFIGURE SELINUX
+
+    - name: Configure SELinux
+      become: true
+      ansible.posix.selinux:
+        state: '{{ selinux }}'
+        policy: targeted
+      register: selinux_result
+
+    - name: Restart OS when needed
+      become: true
+      ansible.builtin.reboot:
+      when: selinux_result.reboot_required
