@@ -30,7 +30,7 @@ ansible-playbook deploy-cert-manager.yml
 ```
 
 
-# Uninstall cert-manager on Kubernetes
+# Uninstall cert-manager
 
 1. Uninstall cert-manager
 ```shell

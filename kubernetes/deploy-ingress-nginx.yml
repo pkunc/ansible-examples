@@ -1,0 +1,23 @@
+#!/usr/bin/env ansible-playbook
+# deploy-ingress-nginx
+# Example usage:
+#  ansible-playbook deploy-ingress-nginx.yml
+
+---
+- name: Deploy Ingress-NGINX
+  hosts: localhost
+
+  tasks:
+
+    - name: Add helm repo
+      kubernetes.core.helm_repository:
+        name: ingress-nginx
+        repo_url: https://kubernetes.github.io/ingress-nginx
+
+    - name: Deploy Ingress-NGINX
+      kubernetes.core.helm:
+        name: ingress-nginx
+        chart_ref: ingress-nginx/ingress-nginx
+        release_namespace: ingress-nginx
+        create_namespace: true
+        atomic: true
