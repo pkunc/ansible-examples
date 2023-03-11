@@ -26,6 +26,14 @@
       ansible.builtin.hostname:
         name: '{{ ansible_host }}'
 
+    - name: Insert hostname into /etc/hosts file
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '{{ ansible_host }}'
+        line: '127.0.0.1 {{ ansible_host }} {{ ansible_host.split(".")[0] }}'
+        state: present
+
 
 # ----- INSTALL PACKAGES
 
@@ -63,6 +71,7 @@
         enabled: false
       loop:
         - postfix
+      ignore_errors: true
 
 
 # ----- CONFIGURE SELINUX
