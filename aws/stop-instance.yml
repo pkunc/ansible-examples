@@ -53,7 +53,7 @@
     - name: Print summary about instance stopping
       ansible.builtin.debug:
         msg: |
-          [✔]  Instance stopped.
+          [✔]  Instance(s) stopped.
           [ℹ]  Instance name:   {{ instance_result | json_query("instances[*].tags.Name") | join(", ") }}
           [ℹ]  Instance ID:     {{ instance_result | json_query("instances[*].instance_id") | join(", ") }}
           [ℹ]  Instance type:   {{ instance_result.instances[0].instance_type }}

@@ -60,7 +60,7 @@
     - name: Print summary about instance cretion
       ansible.builtin.debug:
         msg: |
-          [✔]  Instance created.
+          [✔]  Instance(s) created.
           [ℹ]  Instance name:   {{ instance_result | json_query("results[*].instances[0].tags.Name") | join(", ") }}
           [ℹ]  Instance ID:     {{ instance_result | json_query("results[*].instances[0].instance_id") | join(", ") }}
           [ℹ]  Instance type:   {{ instance_result.results[0].instances[0].instance_type }}
