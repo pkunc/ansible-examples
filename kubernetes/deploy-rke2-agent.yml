@@ -16,6 +16,7 @@
     token: ''
 
   tasks:
+  
     - name: Prompt for token when not set as variable
       ansible.builtin.pause:
         prompt: 'Paste the server access token'

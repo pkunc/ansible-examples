@@ -1,0 +1,24 @@
+#!/usr/bin/env ansible-playbook
+# deploy-loki.yml
+
+# Example usage:
+#  ansible-playbook deploy-loki.yml
+
+---
+- name: Deploy Loki stack
+  hosts: localhost
+
+  tasks:
+
+    - name: Add helm repo
+      kubernetes.core.helm_repository:
+        name: grafana
+        repo_url: https://grafana.github.io/helm-charts
+
+    - name: Deploy Loki stack
+      kubernetes.core.helm:
+        name: loki
+        chart_ref: grafana/loki-stack
+        release_namespace: loki-stack
+        create_namespace: true
+        atomic: true
