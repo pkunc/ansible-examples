@@ -12,17 +12,17 @@
 
   tasks:
 
-    # - name: Install required packages
-    #   become: true
-    #   ansible.builtin.package:
-    #     name: '{{ item }}'
-    #     state: present
-    #   loop:
-    #     - gawk
-    #     - epel-release
-    #     - jq
-    #     - iscsi-initiator-utils
-    #     - nfs-utils
+    - name: Install required packages
+      become: true
+      ansible.builtin.package:
+        name: '{{ item }}'
+        state: present
+      loop:
+        - gawk
+        - epel-release
+        - jq
+        - iscsi-initiator-utils
+        - nfs-utils
 
     - name: Configure iscsi
       become: true

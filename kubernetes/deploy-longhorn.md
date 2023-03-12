@@ -7,7 +7,7 @@
     sudo yum install curl, findmnt, grep, awk, blkid, lsblk, gawk, epel-release, jq, nfs-utils
     ```
 
-1. Install iscsi
+2. Install iscsi
   - Install the package
     ```shell
     sudo yum install iscsi-initiator-utils
@@ -18,14 +18,14 @@
     echo "InitiatorName=$(/sbin/iscsi-iname)" > /etc/iscsi/initiatorname.iscsi
     ```
 
-1. Define a new repository
+3. Define a new repository
     ```shell
     helm repo add longhorn https://charts.longhorn.io
     helm repo update
     ```
 
 
-3. Install Longhorn to a dedicated namespace "longhorn-system"
+4. Install Longhorn to a dedicated namespace "longhorn-system"
     ```shell
     helm upgrade -install longhorn longhorn/longhorn \
       --namespace longhorn-system \
