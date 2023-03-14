@@ -30,7 +30,8 @@
     helm upgrade -install longhorn longhorn/longhorn \
       --namespace longhorn-system \
       --create-namespace \
-      --set persistence.defaultClassReplicaCount=1
+      --set persistence.defaultClassReplicaCount=1 \
+      --atomic
     ```
 
 

@@ -12,7 +12,8 @@ helm repo update
 ```shell
 helm upgrade --install loki grafana/loki-stack \
   --namespace loki-stack \
-  --create-namespace
+  --create-namespace \
+  --atomic
 ```
 
 

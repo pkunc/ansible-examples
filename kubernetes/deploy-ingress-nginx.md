@@ -12,7 +12,8 @@ helm repo update
 ```shell
 helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
   --namespace ingress-nginx \
-  --create-namespace
+  --create-namespace \
+  --atomic
 ```
 
 

@@ -18,7 +18,8 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 helm upgrade --install cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --create-namespace \
-  --version v1.11.0
+  --version v1.11.0 \
+  --atomic
 ```
 
 
