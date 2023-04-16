@@ -1,0 +1,29 @@
+#!/usr/bin/env ansible-playbook
+# deploy-prometheus.yml
+
+# Example usage:
+#  ansible-playbook deploy-prometheus.yml
+
+---
+- name: Deploy Prometheus stack
+  hosts: localhost
+
+  tasks:
+
+    - name: Add helm repo
+      kubernetes.core.helm_repository:
+        name: prometheus-community
+        repo_url: https://prometheus-community.github.io/helm-charts
+
+    - name: Deploy Prometheus stack
+      kubernetes.core.helm:
+        name: prometheus
+        chart_ref: prometheus-community/kube-prometheus-stack
+        release_namespace: monitoring
+        create_namespace: true
+        atomic: true
+        values:
+          prometheus:
+            prometheusSpec:
+              evaluationInterval: 5m
+              scrapeInterval: 5m
