@@ -1,0 +1,18 @@
+{% if 'servers' in group_names %}
+write-kubeconfig-mode: "0644"
+tls-san:
+  - "{{ ansible_host }}"
+disable: traefik
+# # Disallow workload on control node when we have at least one agent node
+# node-taint:
+#   - "CriticalAddonsOnly=true:NoExecute"
+{% else %}
+server: https://{{ server_hostname }}:6443
+token: {{ access_token }}
+{% endif %}
+node-label:
+{% if 'servers' in group_names %}
+  - "nodetype=master"
+{% else %}
+  - "nodetype=worker"
+{% endif %}

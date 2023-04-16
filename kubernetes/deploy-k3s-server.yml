@@ -1,0 +1,54 @@
+#!/usr/bin/env ansible-playbook
+# deploy-k3s-server.yml
+
+# Example usage:
+#  ansible-playbook deploy-k3s-server.yml
+
+---
+- name: Deploy K3s on Server node
+  hosts: servers
+
+  tasks:
+
+    - name: Download install script
+      ansible.builtin.get_url:
+        url: https://get.k3s.io
+        dest: /tmp/install.sh
+        mode: 'u=rwx,g=rx,o=rx'
+
+    - name: Create K3s config folder
+      become: true
+      ansible.builtin.file:
+        path: /etc/rancher/k3s
+        state: directory
+        owner: root
+        group: root
+        mode: 'u=rwx,g=rx,o=rx'
+
+    - name: Copy customized config file
+      become: true
+      ansible.builtin.template:
+        src: 'templates/config-k3s.yaml'
+        dest: '/etc/rancher/k3s/config.yaml'
+        mode: u=rw,g=r,o=r
+
+    - name: Install K3s as a Server
+      become: true
+      ansible.builtin.shell:
+        chdir: /tmp
+        cmd: ./install.sh server
+      register: k3s_result
+      changed_when:
+        - '"Nothing to do" not in k3s_result.stdout'
+      failed_when:
+        - not '"Complete!" in k3s_result.stdout'
+
+    - name: Get content of token file
+      become: true
+      ansible.builtin.command: cat /var/lib/rancher/k3s/server/node-token
+      register: token_file_result
+      changed_when: token_file_result.rc != 0
+
+    - name: Print the K3s token
+      ansible.builtin.debug:
+        msg: 'Use this token to connect RKE2 Agent notes to this Server: {{ token_file_result.stdout }}'

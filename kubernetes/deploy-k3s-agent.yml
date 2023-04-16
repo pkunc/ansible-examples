@@ -1,0 +1,77 @@
+#!/usr/bin/env ansible-playbook
+# deploy-k3s-agent.yml
+
+# Example usage:
+#  ansible-playbook deploy-k3s-agent.yml
+
+---
+- name: Deploy K3s on Agent node
+  hosts: agents
+
+  vars:
+    # Get the token from /var/lib/rancher/rke2/server/node-token file on the Server RKE2 node.
+    # If you for not put your token here, you will be prompted for it at a playbook runtime.
+    # Example:
+    # token: 'K108f2cf8dfa8bcb3581545a2df2502b43c668d65d7c21999d615a014ee61ec265a::server:k3sKubernetes'
+    token: ''
+
+  tasks:
+
+    - name: Prompt for token when not set as variable
+      ansible.builtin.pause:
+        prompt: 'Paste the server access token'
+      register: token_prompt
+      when: token | length == 0
+
+    - name: Store token as a fact
+      ansible.builtin.set_fact:
+        access_token: '{{ (token | length == 0) | ternary (token_prompt.user_input, token) }}'
+
+    - name: Download install script
+      ansible.builtin.get_url:
+        url: https://get.k3s.io
+        dest: /tmp/install.sh
+        mode: 'u=rwx,g=rx,o=rx'
+
+    - name: Create K3s config folder
+      become: true
+      ansible.builtin.file:
+        path: /etc/rancher/k3s
+        state: directory
+        owner: root
+        group: root
+        mode: 'u=rwx,g=rx,o=rx'
+
+    - name: Get K3s Server hostname
+      vars:
+        server_name: '{{ groups["servers"][0] }}'
+      ansible.builtin.set_fact:
+        server_hostname: '{{ hostvars[server_name].ansible_host }}'
+
+    - name: Copy customized config file
+      become: true
+      ansible.builtin.template:
+        src: 'templates/config-k3s.yaml'
+        dest: '/etc/rancher/k3s/config.yaml'
+        mode: u=rw,g=r,o=r
+
+    - name: Install K3s as an Agent
+      become: true
+      ansible.builtin.shell:
+        chdir: /tmp
+        cmd: ./install.sh agent
+      register: k3s_result
+      changed_when:
+        - '"Nothing to do" not in k3s_result.stdout'
+      failed_when:
+        - not '"Complete!" in k3s_result.stdout'
+
+    # - name: Get content of token file
+    #   become: true
+    #   ansible.builtin.command: cat /var/lib/rancher/rke2/server/node-token
+    #   register: token_file_result
+    #   changed_when: token_file_result.rc != 0
+
+    # - name: Print the RKE2 token
+    #   ansible.builtin.debug:
+    #     msg: 'Use this token to connect RKE2 Agent notes to this Server: {{ token_file_result.stdout }}'
