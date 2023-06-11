@@ -1,0 +1,59 @@
+#!/usr/bin/env ansible-playbook
+# deploy-rancher-manager.yml
+
+# Example usage:
+#  ansible-playbook deploy-rancher-manager.yml
+
+---
+- name: Deploy Rancher Manager
+  hosts: localhost
+
+  vars:
+    rancher:
+      hostname: kube1.hcltechsw.academy
+      replicas: 1
+      bootstrap_password: SecretPassword
+    letsencrypt:
+      enable: true
+      email: petr.kunc@gmail.com
+      environment: staging
+
+  tasks:
+
+    - name: Add helm repo
+      kubernetes.core.helm_repository:
+        name: rancher-latest
+        repo_url: https://releases.rancher.com/server-charts/latest
+
+    - name: Deploy Rancher Manager (with default generated certificates)
+      kubernetes.core.helm:
+        name: rancher
+        chart_ref: rancher-latest/rancher
+        release_namespace: cattle-system
+        create_namespace: true
+        atomic: true
+        values:
+          hostname: '{{ rancher.hostname }}'
+          replicas: '{{ rancher.replicas }}'
+          bootstrapPassword: '{{ rancher.bootstrap_password }}'
+      when: not letsencrypt.enable
+
+    - name: Deploy Rancher Manager (with LetsEncrypt certificates)
+      kubernetes.core.helm:
+        name: rancher
+        chart_ref: rancher-latest/rancher
+        release_namespace: cattle-system
+        create_namespace: true
+        atomic: true
+        values:
+          hostname: '{{ rancher.hostname }}'
+          replicas: '{{ rancher.replicas | int }}'
+          bootstrapPassword: '{{ rancher.bootstrap_password }}'
+          ingress:
+            ingressClassName: nginx
+            tls:
+              source: letsEncrypt
+          letsEncrypt:
+            email: '{{ letsencrypt.email }}'
+            environment: '{{ letsencrypt.environment }}'
+      when: letsencrypt.enable
