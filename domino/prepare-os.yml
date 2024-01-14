@@ -1,0 +1,135 @@
+#!/usr/bin/env ansible-playbook
+# prepare-os.yml
+
+# Example usage: ansible-playbook preapre-os.yml
+---
+- name: Prepare Linux server
+  hosts: '{{ run_on_hosts }}'
+  vars_files: vars.yml
+  vars:
+    setup_firewalld: true
+    selinux: enforcing    # enforcing, permissive, disabled
+    setup_drapi: true
+
+  tasks:
+
+# ----- READ SECRETS FROM THE LOCAL INI FILE
+
+    - name: Read values from a local INI file
+      ansible.builtin.include_tasks: 'read-values-task.yml'
+
+
+# ----- CONFIGURE FIREWALL
+
+    - name: Install firewalld
+      become: true
+      ansible.builtin.package:
+        name: firewalld
+        state: present
+      when: setup_firewalld
+
+    - name: Start the firewalld service
+      become: true
+      ansible.builtin.systemd_service:
+        name: firewalld
+        state: started
+        enabled: true
+      when: setup_firewalld
+
+    - name: Print info about firewalld
+      become: true
+      ansible.posix.firewalld_info:
+        active_zones: true
+      when: setup_firewalld
+
+    - name: Copy Domino service definition for firewalld (unix name = lotusnote)
+      become: true
+      ansible.builtin.template:
+        src: 'install/lotusnote.xml'
+        dest: '/usr/lib/firewalld/services'
+        mode: u=rw,g=r,o=r
+      register: lotusnote_result
+      when: setup_firewalld
+
+    - name: Reload firewalld to acknowledge new "lotusnote" definition
+      become: true
+      ansible.builtin.service:
+        name: firewalld
+        state: reloaded
+      when:
+        - setup_firewalld
+        - lotusnote_result.changed
+
+    - name: Enable Domino services in the default zone
+      become: true
+      ansible.posix.firewalld:
+        service: '{{ item }}'
+        permanent: true
+        immediate: true
+        state: enabled
+      loop:
+        - https
+        - http
+        - lotusnote
+        - ldap
+      when: setup_firewalld
+
+    - name: Enable Domino REST API services in the default zone
+      become: true
+      ansible.posix.firewalld:
+        port: '{{ item }}/tcp'
+        permanent: true
+        immediate: true
+        state: enabled
+      loop:
+        - 8880
+        - 8889
+        - 8890
+      when:
+        - setup_drapi
+        - setup_firewalld
+
+    - name: Print info about firewalld
+      become: true
+      ansible.posix.firewalld_info:
+        active_zones: true
+      when: setup_firewalld
+
+
+# ----- CONFIGURE SELINUX
+
+    - name: Configure SELinux
+      become: true
+      ansible.posix.selinux:
+        state: '{{ selinux }}'
+        policy: targeted
+      register: selinux_result
+
+    - name: Restart OS when needed
+      become: true
+      ansible.builtin.reboot:
+      when: selinux_result.reboot_required
+
+
+# ----- INSTALL PACKAGES
+
+    - name: Install required packages
+      become: true
+      ansible.builtin.package:
+        name: '{{ item }}'
+        state: present
+      loop: '{{ packages_to_install }}'
+
+    - name: Update all packages
+      become: true
+      ansible.builtin.yum:
+        name: '*'
+        state: latest
+
+
+# ----- SET HOSTNAME
+
+    - name: Set instance hostname
+      become: true
+      ansible.builtin.hostname:
+        name: '{{ dominoHostname }}'
