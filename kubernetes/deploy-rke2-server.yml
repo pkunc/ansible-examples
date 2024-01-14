@@ -52,6 +52,7 @@
       register: rke2_result
       changed_when:
         - '"Nothing to do" not in rke2_result.stdout'
+        - '"skipped" not in rke2_result.stdout'
 
     - name: Copy and customize config files
       become: true

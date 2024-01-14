@@ -7,16 +7,21 @@
 ---
 - name: Deploy Rancher Kubernetes Engine 2 (RKE2) on Agent nodes
   hosts: agents
+  # vars_files: vars.yml
 
   vars:
     # Get the token from /var/lib/rancher/rke2/server/node-token file on the Server RKE2 node.
-    # If you for not put your token here, you will be prompted for it at a playbook runtime.
+    # If you do not put your token here, you will be prompted for it at a playbook runtime.
     # Example:
-    # token: 'K108473efe13616ebe6c9008f189c0f014a61bbfd673f3c15fb9e9593f4c11802aa::server:3de24a0c7678257badfe0ed9ba97c99b'
-    token: ''
+    # token: 'K10e9d2d8ff7d80ea67c415e0a88d91e47bcc8279c313d398268f7fc763b0103444::server:17f1f40520ea668b3a105779869a28b9'
+
+    token: 'K10e9d2d8ff7d80ea67c415e0a88c91e47bcc7279c313d398268f7fc763b0003444::server:17f1e40520ea668b5a105779867a28b9'
+    # token: ''
+    set_port_forwarding: false
+    rke2_channel: latest    # stable, latest
 
   tasks:
-  
+
     - name: Prompt for token when not set as variable
       ansible.builtin.pause:
         prompt: 'Paste the server access token'
@@ -25,9 +30,15 @@
 
     - name: Store token as a fact
       ansible.builtin.set_fact:
-        access_token: '{{ (token | length == 0) | ternary (token_prompt.user_input, token) }}'
+        access_token: '{{ (token | length == 0) | ternary(token_prompt.user_input, token) }}'
 
-    - name: Set port forwarding
+    - name: Check port forwarding status
+      ansible.builtin.command:
+        cmd: cat /proc/sys/net/ipv4/ip_forward
+      register: forward_result
+      changed_when: forward_result.rc != 0
+
+    - name: Set port forwarding if not enabled
       become: true
       ansible.posix.sysctl:
         name: '{{ item.field }}'
@@ -39,6 +50,9 @@
       loop:
         - { field: net.ipv4.conf.all.forwarding, value: 1 }
         - { field: net.ipv6.conf.all.forwarding, value: 1 }
+      when:
+        - set_port_forwarding
+        - forward_result.stdout != "1"
 
     - name: Download install script
       ansible.builtin.get_url:
@@ -48,11 +62,16 @@
 
     - name: Install RKE2 as an Agent
       become: true
+      environment:
+        INSTALL_RKE2_CHANNEL: '{{ rke2_channel }}'
+        INSTALL_RKE2_TYPE: 'agent'
       ansible.builtin.shell:
-        cmd: 'INSTALL_RKE2_TYPE="agent" /tmp/install.sh'
+        cmd: '/tmp/install.sh'
+        creates: /usr/bin/rke2
       register: rke2_result
       changed_when:
         - '"Nothing to do" not in rke2_result.stdout'
+        - '"skipped" not in rke2_result.stdout'
 
     - name: Get RKE2 Server hostname
       vars:
@@ -63,13 +82,13 @@
     - name: Copy and customize config files
       become: true
       ansible.builtin.template:
-        src: 'templates/{{ item }}'
+        src: 'templates/rke2/{{ item }}'
         dest: '/etc/rancher/rke2/{{ item }}'
-        mode: u=rw,g=r,o=r
+        mode: u=rw,g=,o=
       loop:
         - config.yaml
 
-    - name: Start service rke2-server and enable for autostart
+    - name: Start service rke2-agent and enable for autostart
       become: true
       ansible.builtin.service:
         name: rke2-agent
