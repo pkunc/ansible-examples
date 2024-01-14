@@ -1,0 +1,72 @@
+#!/usr/bin/env ansible-playbook
+# prepare-os.yml
+
+# Example usage:
+#  ansible-playbook prepare-os.yml -i server.example.com,
+# Do not forget the comma (,) in the inventory paramter (-i)!
+
+---
+- name: Prepare Operating System
+  hosts: servers, agents
+  vars_files: vars.yml
+
+  tasks:
+
+# ----- SET HOSTNAME
+
+    - name: Set instance hostname
+      become: true
+      ansible.builtin.hostname:
+        name: '{{ ansible_host }}'
+
+    - name: Insert hostname into /etc/hosts file
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '{{ ansible_host }}'
+        line: '127.0.0.1 {{ ansible_host }} {{ ansible_host.split(".")[0] }}'
+        state: present
+
+
+# ----- INSTALL PACKAGES
+
+    - name: Update all packages
+      become: true
+      ansible.builtin.yum:
+        name: '*'
+        state: latest
+
+    - name: Install required packages
+      become: true
+      ansible.builtin.package:
+        name: '{{ item }}'
+        state: present
+      loop: '{{ packages_to_install }}'
+
+
+# ----- CONFIGURE FIREWALL
+
+    - name: Configure firewalld (enable or disable)
+      ansible.builtin.service:
+        name: firewalld
+        state: '{{ firewalld }}'
+        enabled: true
+      register: firewalld_result
+      failed_when:
+        - firewalld_result.failed == true
+        - '"Could not find the requested service firewalld" not in firewalld_result.msg'
+
+
+# ----- CONFIGURE SELINUX
+
+    - name: Configure SELinux
+      become: true
+      ansible.posix.selinux:
+        state: '{{ selinux }}'
+        policy: targeted
+      register: selinux_result
+
+    - name: Restart OS when needed
+      become: true
+      ansible.builtin.reboot:
+      when: selinux_result.reboot_required
