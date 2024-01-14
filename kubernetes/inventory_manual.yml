@@ -1,0 +1,21 @@
+---
+all:
+  hosts:
+  children:
+    servers:
+      hosts:
+        kube10:
+          ansible_host: kube10.hcltechsw.academy
+    agents:
+      hosts:
+        kube20:
+          ansible_host: kube20.hcltechsw.academy
+        kube21:
+          ansible_host: kube21.hcltechsw.academy
+        kube22:
+          ansible_host: kube22.hcltechsw.academy
+    utils:
+      hosts:
+        registryst:
+          ansible_host: registryst.hcltechsw.academy
+          

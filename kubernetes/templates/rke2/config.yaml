@@ -1,6 +1,7 @@
-write-kubeconfig-mode: "0644"
+write-kubeconfig-mode: "0600"
 tls-san:
   - "{{ ansible_host }}"
+#  - "{{ ( ansible_host | split('.', 1))[1] }}"
 node-label:
 {% if 'servers' in group_names %}
   - "nodetype=master"
@@ -8,6 +9,7 @@ node-label:
   - "nodetype=worker"
 {% endif %}
 {% if 'servers' in group_names %}
+enable-servicelb: true    # for enabling ServiceLB load balancer
 etcd-expose-metrics: true  # for scraping data in prometheus
 kube-controller-manager-arg: # for scraping datas via prometheus
   - "bind-address=0.0.0.0"
