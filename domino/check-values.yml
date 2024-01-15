@@ -1,0 +1,42 @@
+#!/usr/bin/env ansible-playbook
+# check-values.yml
+
+# Example usage: ansible-playbook check-values.yml
+---
+- name: Chek values that will be used to install Domino
+  hosts: '{{ run_on_hosts }}'
+  vars_files: vars.yml
+
+  tasks:
+
+# ----- READ VALUES FROM THE LOCAL INI FILE
+
+    - name: Read values from a local INI file
+      ansible.builtin.include_tasks: 'read-values-task.yml'
+
+    - name: Print all values in the default section
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      with_ini:
+        - '.* section=default file=env.ini re=True'
+
+    - name: Print all values in the section for the specific server
+      ansible.builtin.debug:
+        msg: "{{ item }}"
+      with_ini:
+        - '.* section={{ inventory_hostname }} file=env.ini re=True'
+
+    - name: Print final parameters for the Domino server installation
+      ansible.builtin.debug:
+        msg: |
+          - Organization name: {{ orgName }}
+          - Organization password (cert.id): {{ certifierPassword }}
+          - Administrator password (admin.id): {{ adminPassword }}
+          - Use existing server.id: {{ useExistingServerID }}
+          - Use existing cert.id: {{ useExistingServerID }}
+          - Use existing admin.id: {{ useExistingAdminID }}
+          - Existing IDs are stored in this local subfolder: install/{{ idsSubfolder }}
+          - Domino server name: {{ serverName }}
+          - Domino hostname: {{ dominoHostname }}
+          - Domino Domain: {{ dominoDomain }}
+          - Register initial users: {{ registerUsers }}

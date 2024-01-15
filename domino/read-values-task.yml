@@ -1,0 +1,35 @@
+# read-values-task.yml
+---
+
+- name: Read values from a local INI file
+  ansible.builtin.set_fact:
+    '{{ item }}': "{{ lookup('ansible.builtin.ini', item, section=inventory_hostname, file='env.ini') \
+                  | default(lookup('ansible.builtin.ini', item, section='default', file='env.ini'), true) }}"
+  loop:
+    - orgName
+    - certifierPassword
+    - adminPassword
+    - useExistingServerID
+    - useExistingCertifierID
+    - useExistingAdminID
+    - idsSubfolder
+    - serverName
+    - dominoHostname
+    - dominoDomain
+    - registerUsers
+
+- name: Set default value for Domino server name, if not set in the INI file
+  ansible.builtin.set_fact:
+    serverName: '{{ inventory_hostname | capitalize }}'
+  when: serverName | length == 0
+
+- name: Set default value for Domino hostname, if not set in the INI file
+  ansible.builtin.set_fact:
+    dominoHostname: '{{ ansible_host }}'
+    # dominoHostname: '{{ ansible_nodename }}'
+  when: dominoHostname | length == 0
+
+- name: Set default value for Domino domain, if not set in the INI file
+  ansible.builtin.set_fact:
+    dominoDomain: '{{ orgName }}'
+  when: dominoDomain | length == 0
