@@ -1,5 +1,6 @@
 #!/usr/bin/env ansible-playbook
 # deploy-lets-encrypt
+
 # Example usage:
 #  ansible-playbook deploy-lets-encrypt.yml
 
@@ -18,13 +19,3 @@
         template:
           - path: 'templates/cert-manager/cluster-issuer-staging.yml'
           - path: 'templates/cert-manager/cluster-issuer-prod.yml'
-
-
-
-    # - name: Deploy Ingress-NGINX
-    #   kubernetes.core.helm:
-    #     name: ingress-nginx
-    #     chart_ref: ingress-nginx/ingress-nginx
-    #     release_namespace: ingress-nginx
-    #     create_namespace: true
-    #     atomic: true

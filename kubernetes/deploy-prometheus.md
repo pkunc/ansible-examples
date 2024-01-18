@@ -15,6 +15,7 @@ helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
   --create-namespace \
   --set prometheus.prometheusSpec.evaluationInterval=5m \
   --set prometheus.prometheusSpec.scrapeInterval=5m \
+  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
   --atomic
 ```
 

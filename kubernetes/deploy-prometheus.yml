@@ -10,7 +10,7 @@
 
   tasks:
 
-    - name: Add helm repo
+    - name: Add helm repo for Prometheus
       kubernetes.core.helm_repository:
         name: prometheus-community
         repo_url: https://prometheus-community.github.io/helm-charts
@@ -27,3 +27,4 @@
             prometheusSpec:
               evaluationInterval: 5m
               scrapeInterval: 5m
+              serviceMonitorSelectorNilUsesHelmValues: true

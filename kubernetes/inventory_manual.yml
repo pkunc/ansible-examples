@@ -10,10 +10,10 @@ all:
       hosts:
         kube20:
           ansible_host: kube20.hcltechsw.academy
-        kube21:
-          ansible_host: kube21.hcltechsw.academy
-        kube22:
-          ansible_host: kube22.hcltechsw.academy
+        # kube21:
+        #   ansible_host: kube21.hcltechsw.academy
+        # kube22:
+        #   ansible_host: kube22.hcltechsw.academy
     utils:
       hosts:
         registryst:
