@@ -1,0 +1,29 @@
+#!/usr/bin/env ansible-playbook
+# deploy-demo-app
+
+# Example usage:
+#  ansible-playbook deploy-demo-app.yml
+
+---
+- name: Deploy demo application for testing Ingress-NGINX
+  hosts: localhost
+
+  vars:
+    web_hostname: ''
+    namespace: default
+
+  tasks:
+
+    - name: Set external web hostname when not specified in the playbook vars section
+      vars:
+        first_server: '{{ groups["servers"][0] }}'
+      ansible.builtin.set_fact:
+        web_hostname: '{{ hostvars[first_server]["ansible_host"] }}'
+      when: not web_hostname | length > 0
+
+    - name: 'Deploy demo application Kuard to namespace {{ namespace }} for web hostname {{ web_hostname }}'
+      kubernetes.core.k8s:
+        state: present
+        template:
+          - path: 'templates/kuard/demo-deployment.yml'
+          - path: 'templates/kuard/demo-ingress.yml'

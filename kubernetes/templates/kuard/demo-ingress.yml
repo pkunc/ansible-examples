@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: kuard
+  namespace: '{{ namespace}}'
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 
@@ -9,10 +10,10 @@ spec:
   ingressClassName: "nginx"
   tls:
   - hosts:
-    - kube20.hcltechsw.academy
+    - '{{ web_hostname }}'
     secretName: quickstart-example-tls
   rules:
-  - host: kube20.hcltechsw.academy
+  - host: '{{ web_hostname }}'
     http:
       paths:
       - path: /
