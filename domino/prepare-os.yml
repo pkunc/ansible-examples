@@ -7,9 +7,10 @@
   hosts: '{{ run_on_hosts }}'
   vars_files: vars.yml
   vars:
+    timezone: Europe/Prague
     setup_firewalld: true
     selinux: enforcing    # enforcing, permissive, disabled
-    setup_drapi: true
+    setup_drapi: false
 
   tasks:
 
@@ -17,6 +18,14 @@
 
     - name: Read values from a local INI file
       ansible.builtin.include_tasks: 'read-values-task.yml'
+
+
+# ----- SET TIMEZONE
+
+    - name: Set timezone
+      become: true
+      community.general.timezone:
+        name: '{{ timezone }}'
 
 
 # ----- CONFIGURE FIREWALL
@@ -116,9 +125,8 @@
     - name: Install required packages
       become: true
       ansible.builtin.package:
-        name: '{{ item }}'
+        name: '{{ packages_to_install }}'
         state: present
-      loop: '{{ packages_to_install }}'
 
     - name: Update all packages
       become: true
